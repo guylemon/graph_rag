@@ -1,3 +1,10 @@
+use std::process::exit;
+
+use graph_rag::run;
+
 fn main() {
-    println!("Hello, world!");
+    if let Err(e) = run() {
+        eprintln!("Error: {e}");
+        exit(1)
+    }
 }

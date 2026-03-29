@@ -1,0 +1,444 @@
+   [4]
+   graphrag
+
+     * [5]Home
+     * [6]Indexing
+     * [7]Prompt Tuning
+     * [8]Query
+     * [9]Configuration
+     * [10]CLI
+     * [11]Extras
+
+   GraphRAG
+   [12]
+   graphrag
+     * [ ] Home
+   Home
+          + [13]Welcome
+          + [14]Getting Started
+          + [15]Development Guide
+     * [X] Indexing
+   Indexing
+          + [16]Overview
+          + [17]Architecture
+          + [ ] Dataflow [18]Dataflow
+        Table of contents
+               o [19]The GraphRAG Knowledge Model
+               o [20]The Default Configuration Workflow
+               o [21]Phase 1: Compose TextUnits
+               o [22]Phase 2: Document Processing
+                    # [23]Link to TextUnits
+                    # [24]Documents Table
+               o [25]Phase 3: Graph Extraction
+                    # [26]Entity & Relationship Extraction
+                    # [27]Entity & Relationship Summarization
+                    # [28]Claim Extraction (optional)
+               o [29]Phase 4: Graph Augmentation
+                    # [30]Community Detection
+                    # [31]Graph Tables
+               o [32]Phase 5: Community Summarization
+                    # [33]Generate Community Reports
+                    # [34]Summarize Community Reports
+                    # [35]Community Reports Table
+               o [36]Phase 6: Text Embedding
+          + [37]Methods
+          + [38]Inputs
+          + [39]Outputs
+          + [40]Custom Graphs
+     * [ ] Prompt Tuning
+   Prompt Tuning
+          + [41]Overview
+          + [42]Auto Tuning
+          + [43]Manual Tuning
+     * [ ] Query
+   Query
+          + [44]Overview
+          + [45]Global Search
+          + [46]Local Search
+          + [47]DRIFT Search
+          + [48]Question Generation
+          + [ ] Notebooks
+        Notebooks
+               o [49]Overview
+               o [50]Global Search
+               o [51]Local Search
+               o [52]DRIFT Search
+     * [ ] Configuration
+   Configuration
+          + [53]Overview
+          + [54]Init Command
+          + [55]Detailed Configuration
+          + [56]Language Model Selection
+     * [57]CLI
+     * [ ] Extras
+   Extras
+          + [58]Microsoft Research Blog
+          + [59]Visualization Guide
+          + [ ] Operation Dulce
+        Operation Dulce
+               o [60]About
+               o [61]Document
+
+   Table of contents
+     * [62]The GraphRAG Knowledge Model
+     * [63]The Default Configuration Workflow
+     * [64]Phase 1: Compose TextUnits
+     * [65]Phase 2: Document Processing
+          + [66]Link to TextUnits
+          + [67]Documents Table
+     * [68]Phase 3: Graph Extraction
+          + [69]Entity & Relationship Extraction
+          + [70]Entity & Relationship Summarization
+          + [71]Claim Extraction (optional)
+     * [72]Phase 4: Graph Augmentation
+          + [73]Community Detection
+          + [74]Graph Tables
+     * [75]Phase 5: Community Summarization
+          + [76]Generate Community Reports
+          + [77]Summarize Community Reports
+          + [78]Community Reports Table
+     * [79]Phase 6: Text Embedding
+
+Indexing Dataflow
+
+The GraphRAG Knowledge Model
+
+   The knowledge model is a specification for data outputs that conform to
+   our data-model definition. You can find these definitions in the
+   python/graphrag/graphrag/model folder within the GraphRAG repository.
+   The following entity types are provided. The fields here represent the
+   fields that are text-embedded by default.
+     * Document - An input document into the system. These either
+       represent individual rows in a CSV or individual .txt files.
+     * TextUnit - A chunk of text to analyze. The size of these chunks,
+       their overlap, and whether they adhere to any data boundaries may
+       be configured below.
+     * Entity - An entity extracted from a TextUnit. These represent
+       people, places, events, or some other entity-model that you
+       provide.
+     * Relationship - A relationship between two entities.
+     * Covariate - Extracted claim information, which contains statements
+       about entities which may be time-bound.
+     * Community - Once the graph of entities and relationships is built,
+       we perform hierarchical community detection on them to create a
+       clustering structure.
+     * Community Report - The contents of each community are summarized
+       into a generated report, useful for human reading and downstream
+       search.
+
+The Default Configuration Workflow
+
+   Let's take a look at how the default-configuration workflow transforms
+   text documents into the GraphRAG Knowledge Model. This page gives a
+   general overview of the major steps in this process. To fully configure
+   this workflow, check out the [80]configuration documentation.
+---
+title: Dataflow Overview
+---
+flowchart TB
+    subgraph phase1[Phase 1: Compose TextUnits]
+    documents[Documents] --> chunk[Chunk]
+    chunk --> textUnits[Text Units]
+    end
+    subgraph phase2[Phase 2: Document Processing]
+    documents --> link_to_text_units[Link to TextUnits]
+    textUnits --> link_to_text_units
+    link_to_text_units --> document_outputs[Documents Table]
+    end
+    subgraph phase3[Phase 3 Graph Extraction]
+    textUnits --> graph_extract[Entity & Relationship Extraction]
+    graph_extract --> graph_summarize[Entity & Relationship Summarization]
+    graph_summarize --> claim_extraction[Claim Extraction]
+    claim_extraction --> graph_outputs[Graph Tables]
+    end
+    subgraph phase4[Phase 4: Graph Augmentation]
+    graph_outputs --> community_detect[Community Detection]
+    community_detect --> community_outputs[Communities Table]
+    end
+    subgraph phase5[Phase 5: Community Summarization]
+    community_outputs --> summarized_communities[Community Summarization]
+    summarized_communities --> community_report_outputs[Community Reports Table]
+    end
+    subgraph phase6[Phase 6: Text Embeddings]
+    textUnits --> text_embed[Text Embedding]
+    graph_outputs --> description_embed[Description Embedding]
+    community_report_outputs --> content_embed[Content Embedding]
+    end
+
+Phase 1: Compose TextUnits
+
+   The first phase of the default-configuration workflow is to transform
+   input documents into TextUnits. A TextUnit is a chunk of text that is
+   used for our graph extraction techniques. They are also used as
+   source-references by extracted knowledge items in order to empower
+   breadcrumbs and provenance by concepts back to their original source
+   text.
+
+   The chunk size (counted in tokens), is user-configurable. By default
+   this is set to 1200 tokens. Larger chunks result in lower-fidelity
+   output and less meaningful reference texts; however, using larger
+   chunks can result in much faster processing time.
+---
+title: Documents into Text Chunks
+---
+flowchart LR
+    doc1[Document 1] --> tu1[TextUnit 1]
+    doc1 --> tu2[TextUnit 2]
+    doc2[Document 2] --> tu3[TextUnit 3]
+    doc2 --> tu4[TextUnit 4]
+
+Phase 2: Document Processing
+
+   In this phase of the workflow, we create the Documents table for the
+   knowledge model. Final documents are not used directly in GraphRAG, but
+   this step links them to their constituent text units for provenance in
+   your own applications.
+---
+title: Document Processing
+---
+flowchart LR
+    aug[Augment] --> dp[Link to TextUnits] --> dg[Documents Table]
+
+Link to TextUnits
+
+   In this step, we link each document to the text-units that were created
+   in the first phase. This allows us to understand which documents are
+   related to which text-units and vice-versa.
+
+Documents Table
+
+   At this point, we can export the Documents table into the knowledge
+   Model.
+
+Phase 3: Graph Extraction
+
+   In this phase, we analyze each text unit and extract our graph
+   primitives: Entities, Relationships, and Claims. Entities and
+   Relationships are extracted at once in our extract_graph workflow, and
+   claims are extracted in our extract_claims workflow. Results are then
+   combined and passed into following phases of the pipeline.
+---
+title: Graph Extraction
+---
+flowchart LR
+    tu[TextUnit] --> ge[Graph Extraction] --> gs[Graph Summarization]
+    tu --> ce[Claim Extraction]
+
+     Note: if you are using the [81]FastGraphRAG option, entity and
+     relationship extraction will be performed using NLP to conserve LLM
+     resources, and claim extraction will always be skipped.
+
+Entity & Relationship Extraction
+
+   In this first step of graph extraction, we process each text-unit to
+   extract entities and relationships out of the raw text using the LLM.
+   The output of this step is a subgraph-per-TextUnit containing a list of
+   entities with a title, type, and description, and a list of
+   relationships with a source, target, and description.
+
+   These subgraphs are merged together - any entities with the same title
+   and type are merged by creating an array of their descriptions.
+   Similarly, any relationships with the same source and target are merged
+   by creating an array of their descriptions.
+
+Entity & Relationship Summarization
+
+   Now that we have a graph of entities and relationships, each with a
+   list of descriptions, we can summarize these lists into a single
+   description per entity and relationship. This is done by asking the LLM
+   for a short summary that captures all of the distinct information from
+   each description. This allows all of our entities and relationships to
+   have a single concise description.
+
+Claim Extraction (optional)
+
+   Finally, as an independent workflow, we extract claims from the source
+   TextUnits. These claims represent positive factual statements with an
+   evaluated status and time-bounds. These get exported as a primary
+   artifact called Covariates.
+
+   Note: claim extraction is optional and turned off by default. This is
+   because claim extraction generally requires prompt tuning to be useful.
+
+Phase 4: Graph Augmentation
+
+   Now that we have a usable graph of entities and relationships, we want
+   to understand their community structure. These give us explicit ways of
+   understanding the organization of our graph.
+---
+title: Graph Augmentation
+---
+flowchart LR
+    cd[Leiden Hierarchical Community Detection] --> ag[Graph Tables]
+
+Community Detection
+
+   In this step, we generate a hierarchy of entity communities using the
+   Hierarchical Leiden Algorithm. This method will apply a recursive
+   community-clustering to our graph until we reach a community-size
+   threshold. This will allow us to understand the community structure of
+   our graph and provide a way to navigate and summarize the graph at
+   different levels of granularity.
+
+Graph Tables
+
+   Once our graph augmentation steps are complete, the final Entities,
+   Relationships, and Communities tables are exported.
+
+Phase 5: Community Summarization
+
+---
+title: Community Summarization
+---
+flowchart LR
+    sc[Generate Community Reports] --> ss[Summarize Community Reports] --> co[Co
+mmunity Reports Table]
+
+   At this point, we have a functional graph of entities and relationships
+   and a hierarchy of communities for the entities.
+
+   Now we want to build on the communities data and generate reports for
+   each community. This gives us a high-level understanding of the graph
+   at several points of graph granularity. For example, if community A is
+   the top-level community, we'll get a report about the entire graph. If
+   the community is lower-level, we'll get a report about a local cluster.
+
+Generate Community Reports
+
+   In this step, we generate a summary of each community using the LLM.
+   This will allow us to understand the distinct information contained
+   within each community and provide a scoped understanding of the graph,
+   from either a high-level or a low-level perspective. These reports
+   contain an executive overview and reference the key entities,
+   relationships, and claims within the community sub-structure.
+
+Summarize Community Reports
+
+   In this step, each community report is then summarized via the LLM for
+   shorthand use.
+
+Community Reports Table
+
+   At this point, some bookkeeping work is performed and we export the
+   Community Reports tables.
+
+Phase 6: Text Embedding
+
+   For all artifacts that require downstream vector search, we generate
+   text embeddings as a final step. These embeddings are written directly
+   to a configured vector store. By default we embed entity descriptions,
+   text unit text, and community report text.
+---
+title: Text Embedding Workflows
+---
+flowchart LR
+    textUnits[Text Units] --> text_embed[Text Embedding]
+    graph_outputs[Graph Tables] --> description_embed[Description Embedding]
+    community_report_outputs[Community Reports] --> content_embed[Content Embedd
+ing]
+
+   [82]
+   Previous
+   Architecture
+   [83]
+   Next
+   Methods
+   © 2025 Microsoft |  [84]Privacy |  [85]Consumer Heath Privacy |
+   Cookies |  [86]Terms of Use |  [87]Trademarks
+   Made with [88]Material for MkDocs
+
+References
+
+   Visible links:
+   1. https://microsoft.github.io/graphrag/index/architecture/
+   2. https://microsoft.github.io/graphrag/index/methods/
+   3. https://microsoft.github.io/graphrag/index/default_dataflow/#indexing-dataflow
+   4. https://github.com/microsoft/graphrag
+   5. https://microsoft.github.io/graphrag/
+   6. https://microsoft.github.io/graphrag/index/overview/
+   7. https://microsoft.github.io/graphrag/prompt_tuning/overview/
+   8. https://microsoft.github.io/graphrag/query/overview/
+   9. https://microsoft.github.io/graphrag/config/overview/
+  10. https://microsoft.github.io/graphrag/cli/
+  11. https://microsoft.github.io/graphrag/blog_posts/
+  12. https://github.com/microsoft/graphrag
+  13. https://microsoft.github.io/graphrag/
+  14. https://microsoft.github.io/graphrag/get_started/
+  15. https://microsoft.github.io/graphrag/developing/
+  16. https://microsoft.github.io/graphrag/index/overview/
+  17. https://microsoft.github.io/graphrag/index/architecture/
+  18. https://microsoft.github.io/graphrag/index/default_dataflow/
+  19. https://microsoft.github.io/graphrag/index/default_dataflow/#the-graphrag-knowledge-model
+  20. https://microsoft.github.io/graphrag/index/default_dataflow/#the-default-configuration-workflow
+  21. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-1-compose-textunits
+  22. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-2-document-processing
+  23. https://microsoft.github.io/graphrag/index/default_dataflow/#link-to-textunits
+  24. https://microsoft.github.io/graphrag/index/default_dataflow/#documents-table
+  25. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-3-graph-extraction
+  26. https://microsoft.github.io/graphrag/index/default_dataflow/#entity-relationship-extraction
+  27. https://microsoft.github.io/graphrag/index/default_dataflow/#entity-relationship-summarization
+  28. https://microsoft.github.io/graphrag/index/default_dataflow/#claim-extraction-optional
+  29. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-4-graph-augmentation
+  30. https://microsoft.github.io/graphrag/index/default_dataflow/#community-detection
+  31. https://microsoft.github.io/graphrag/index/default_dataflow/#graph-tables
+  32. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-5-community-summarization
+  33. https://microsoft.github.io/graphrag/index/default_dataflow/#generate-community-reports
+  34. https://microsoft.github.io/graphrag/index/default_dataflow/#summarize-community-reports
+  35. https://microsoft.github.io/graphrag/index/default_dataflow/#community-reports-table
+  36. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-6-text-embedding
+  37. https://microsoft.github.io/graphrag/index/methods/
+  38. https://microsoft.github.io/graphrag/index/inputs/
+  39. https://microsoft.github.io/graphrag/index/outputs/
+  40. https://microsoft.github.io/graphrag/index/byog/
+  41. https://microsoft.github.io/graphrag/prompt_tuning/overview/
+  42. https://microsoft.github.io/graphrag/prompt_tuning/auto_prompt_tuning/
+  43. https://microsoft.github.io/graphrag/prompt_tuning/manual_prompt_tuning/
+  44. https://microsoft.github.io/graphrag/query/overview/
+  45. https://microsoft.github.io/graphrag/query/global_search/
+  46. https://microsoft.github.io/graphrag/query/local_search/
+  47. https://microsoft.github.io/graphrag/query/drift_search/
+  48. https://microsoft.github.io/graphrag/query/question_generation/
+  49. https://microsoft.github.io/graphrag/query/notebooks/overview/
+  50. https://microsoft.github.io/graphrag/examples_notebooks/global_search/
+  51. https://microsoft.github.io/graphrag/examples_notebooks/local_search/
+  52. https://microsoft.github.io/graphrag/examples_notebooks/drift_search/
+  53. https://microsoft.github.io/graphrag/config/overview/
+  54. https://microsoft.github.io/graphrag/config/init/
+  55. https://microsoft.github.io/graphrag/config/yaml/
+  56. https://microsoft.github.io/graphrag/config/models/
+  57. https://microsoft.github.io/graphrag/cli/
+  58. https://microsoft.github.io/graphrag/blog_posts/
+  59. https://microsoft.github.io/graphrag/visualization_guide/
+  60. https://microsoft.github.io/graphrag/data/operation_dulce/ABOUT/
+  61. https://microsoft.github.io/graphrag/data/operation_dulce/Operation Dulce v2 1 1/
+  62. https://microsoft.github.io/graphrag/index/default_dataflow/#the-graphrag-knowledge-model
+  63. https://microsoft.github.io/graphrag/index/default_dataflow/#the-default-configuration-workflow
+  64. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-1-compose-textunits
+  65. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-2-document-processing
+  66. https://microsoft.github.io/graphrag/index/default_dataflow/#link-to-textunits
+  67. https://microsoft.github.io/graphrag/index/default_dataflow/#documents-table
+  68. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-3-graph-extraction
+  69. https://microsoft.github.io/graphrag/index/default_dataflow/#entity-relationship-extraction
+  70. https://microsoft.github.io/graphrag/index/default_dataflow/#entity-relationship-summarization
+  71. https://microsoft.github.io/graphrag/index/default_dataflow/#claim-extraction-optional
+  72. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-4-graph-augmentation
+  73. https://microsoft.github.io/graphrag/index/default_dataflow/#community-detection
+  74. https://microsoft.github.io/graphrag/index/default_dataflow/#graph-tables
+  75. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-5-community-summarization
+  76. https://microsoft.github.io/graphrag/index/default_dataflow/#generate-community-reports
+  77. https://microsoft.github.io/graphrag/index/default_dataflow/#summarize-community-reports
+  78. https://microsoft.github.io/graphrag/index/default_dataflow/#community-reports-table
+  79. https://microsoft.github.io/graphrag/index/default_dataflow/#phase-6-text-embedding
+  80. https://microsoft.github.io/graphrag/config/overview/
+  81. https://microsoft.github.io/graphrag/index/methods/#fastgraphrag
+  82. https://microsoft.github.io/graphrag/index/architecture/
+  83. https://microsoft.github.io/graphrag/index/methods/
+  84. https://go.microsoft.com/fwlink/?LinkId=521839
+  85. https://go.microsoft.com/fwlink/?LinkId=2259814
+  86. https://go.microsoft.com/fwlink/?LinkID=206977
+  87. https://www.microsoft.com/trademarks
+  88. https://squidfunk.github.io/mkdocs-material/
+
+   Hidden links:
+  90. https://microsoft.github.io/graphrag/
+  91. https://microsoft.github.io/graphrag/
