@@ -1,0 +1,18 @@
+Task:
+Extract entities and relationships from the input text.
+
+Rules:
+1) Extract all entities whose type is allowed in the schema.
+2) For each entity, return:
+   - entity_name (uppercase canonical name)
+   - entity_type (must be one of allowed types)
+   - entity_description (concise but informative)
+3) Extract only clear relationships between extracted entities.
+4) For each relationship, return:
+   - source_entity
+   - target_entity
+   - relationship_description
+   - relationship_strength (integer 1-10)
+5) De-duplicate entities by canonical name.
+6) If none found, return empty arrays.
+7) Return only JSON matching the provided schema.
