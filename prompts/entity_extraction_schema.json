@@ -9,7 +9,27 @@
         "additionalProperties": false,
         "properties": {
           "entity_name": { "type": "string" },
-          "entity_type": { "type": "string", "enum": ["ORGANIZATION", "PERSON", "GEO"] },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "PERSON",
+              "ORGANIZATION",
+              "LOCATION",
+              "GPE",
+              "DATE",
+              "TIME",
+              "MONEY",
+              "PERCENT",
+              "FACILITY",
+              "PRODUCT",
+              "EVENT",
+              "WORK_OF_ART",
+              "LANGUAGE",
+              "LAW",
+              "NORP",
+              "THING"
+            ]
+          },
           "entity_description": { "type": "string" }
         },
         "required": ["entity_name", "entity_type", "entity_description"]

@@ -210,3 +210,96 @@ Provenance sidecar **record** for a single relationship mention extraction.
 - Provenance layer now contains:
   - `4 entity mention rows`
   - `3 relationship mention rows`
+
+## Ontology
+
+> adapted from https://encord.com/blog/named-entity-recognition/
+
+In NER, labels are the categories assigned to words or phrases identified as named entities within a piece of text. These labels indicate the type of entity detected, such as a person, organization, location, or date. The labeling process allows unstructured text to be converted into structured data, which can be used for various applications like information retrieval, question answering, and data analysis.
+
+The set of labels used in NER can vary depending on the specific application, domain, or dataset. However, some standard labels are widely used across different NER systems:
+
+```json
+[
+  {
+    "label": "Person (PER)",
+    "description": "Names of people or fictional characters.",
+    "example": "Albert Einstein,\" \"Marie Curie,\" \"Sherlock Holmes.\""
+  },
+  {
+    "label": "Organization (ORG)",
+    "description": "Names of companies, institutions, agencies, or other groups of people.",
+    "example": "\"Google,\" \"United Nations,\" \"Harvard University.\""
+  },
+  {
+    "label": "Location (LOC)",
+    "description": "Names of geographical places such as cities, countries, mountains, rivers.",
+    "example": "\"Mount Everest,\" \"Nile River,\" \"Paris.\""
+  },
+  {
+    "label": "Geo-Political Entity (GPE)",
+    "description": "Geographical regions that are also political entities.",
+    "example": "\"United States,\" \"Germany,\" \"Tokyo.\""
+  },
+  {
+    "label": "Date",
+    "description": "Expressions of calendar dates or periods.",
+    "example": "\"January 1, 2022,\" \"the 19th century,\" \"2010-2015.\""
+  },
+  {
+    "label": "Time",
+    "description": "Specific times within a day or durations.",
+    "example": "\"5 PM,\" \"midnight,\" \"two hours.\""
+  },
+  {
+    "label": "Money",
+    "description": "Monetary values, often accompanied by currency symbols.",
+    "example": "\"$100,\" \"€50 million,\" \"1,000 yen.\""
+  },
+  {
+    "label": "Percent",
+    "description": "Percentage expressions.",
+    "example": "\"50%,\" \"3.14%,\" \"half.\""
+  },
+  {
+    "label": "Facility (FAC)",
+    "description": "Buildings or infrastructure.",
+    "example": "\"Eiffel Tower,\" \"JFK Airport,\" \"Golden Gate Bridge.\""
+  },
+  {
+    "label": "Product",
+    "description": "Objects, vehicles, software, or any tangible items.",
+    "example": "\"iPhone,\" \"Boeing 747,\" \"Windows 10.\""
+  },
+  {
+    "label": "Event",
+    "description": "Named occurrences such as wars, sports events, disasters.",
+    "example": "\"World War II,\" \"Olympics,\" \"Hurricane Katrina.\""
+  },
+  {
+    "label": "Work of Art",
+    "description": "Titles of books, songs, paintings, movies.",
+    "example": "\"Mona Lisa,\" \"To Kill a Mockingbird,\" \"Star Wars.\""
+  },
+  {
+    "label": "Language",
+    "description": "Names of languages.",
+    "example": "\"English,\" \"Mandarin,\" \"Spanish.\""
+  },
+  {
+    "label": "Law",
+    "description": "Legal documents, treaties, acts.",
+    "example": "\"The Affordable Care Act,\" \"Treaty of Versailles.\""
+  },
+  {
+    "label": "NORP (Nationality, Religious, or Political Group)",
+    "description": "Nationalities, religious groups, or political affiliations.",
+    "example": "\"American,\" \"Christians,\" \"Democrat.\""
+  },
+  {
+    "label": "Thing",
+    "description": "A catch-all label to use when the other labels do not apply.",
+    "example": "\"Apple (fruit),\" \"rabbits,\" \"tree.\""
+  },
+]
+```
