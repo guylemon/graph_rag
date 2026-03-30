@@ -2,6 +2,7 @@ use graphqlite::Graph;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
 
@@ -97,7 +98,9 @@ pub fn run() -> Result<(), AppError> {
     let g = Graph::open(":memory:")?;
 
     // Add nodes
+    let mut entity_set: HashSet<String> = HashSet::new();
     for entity in extraction.entities[0..].iter() {
+        entity_set.insert(entity.entity_name.to_owned());
         g.upsert_node(
             &entity.entity_name,
             [("description", &entity.entity_description)],
@@ -105,17 +108,25 @@ pub fn run() -> Result<(), AppError> {
         )?;
     }
 
-    // Add edges
     for edge in extraction.relationships[0..].iter() {
-        g.upsert_edge(
-            &edge.source_entity,
-            &edge.target_entity,
-            [("description", &edge.relationship_description)],
-            &edge.relationship_description,
-        )?;
+        // filter invalid edges from LLM
+        if entity_set.contains(&edge.source_entity) && entity_set.contains(&edge.source_entity) {
+            g.upsert_edge(
+                &edge.source_entity,
+                &edge.target_entity,
+                [("description", &edge.relationship_description)],
+                &edge.relationship_description,
+            )?;
+        } else {
+            println!(
+                "Invalid edge from {} -> {}",
+                &edge.source_entity, &edge.target_entity
+            );
+            continue;
+        }
     }
 
-    // transform for terminal display
+    // transform and export for terminal display
     let nodes: Vec<NodeExport> = extraction
         .entities
         .iter()
