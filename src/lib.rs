@@ -169,7 +169,7 @@ fn extract_relationship_mentions(provider: &Provider, input: &str, entities: &Ve
     let user_prompt = Message::new(Role::User, &llm_prompt::substitute(&template, &variables)?);
     let schema_raw = fs::read_to_string("./prompts/entity_relationship_schema.json")?;
     let format: Format = Format::Schema(serde_json::from_str(&schema_raw)?);
-    let chat_request = ChatRequest::builder("granite4:1b")
+    let chat_request = ChatRequest::builder("qwen3:8b")
         .add_message(sys_prompt)
         .add_message(user_prompt)
         .format(format)

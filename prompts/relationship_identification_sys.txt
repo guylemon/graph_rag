@@ -9,3 +9,10 @@ Rules:
    - relationship_description
 3) If none found, return empty array.
 4) Return only JSON matching the provided schema.
+
+Example relationships by category:
+
+- **Hierarchy**: isA, subClassOf, partOf, hasMember
+- **Social**: knows, worksFor, manages, friendsWith
+- **Action**: purchased, authored, created, mentions
+- **Logic**: sameAs, equivalentTo, inverseOf
