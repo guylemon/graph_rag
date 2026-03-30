@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cytoscape Demo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        font-family: sans-serif;
+      }
+
+      #cy {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      #node-info {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        width: min(320px, calc(100vw - 24px));
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.95);
+        color: #0f172a;
+        font: 13px/1.4 sans-serif;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
+        z-index: 1;
+      }
+
+      #node-info h2 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+
+      #node-type {
+        margin: 0 0 6px;
+        color: #334155;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      #node-description {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cy"></div>
+    <aside id="node-info" aria-live="polite">
+      <h2 id="node-title">Node details</h2>
+      <p id="node-type">Entity type</p>
+      <p id="node-description">Click a node to see its description.</p>
+    </aside>
+
+    <script src="./cytoscape.min.js"></script>
+    <script>
+      async function initGraph() {
+        const response = await fetch("./data.json");
+        if (!response.ok) {
+          throw new Error(`Failed to load data.json (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const elements = Array.isArray(payload) ? payload : payload.elements;
+
+        if (!Array.isArray(elements)) {
+          throw new Error("data.json must be an array or an object with an 'elements' array");
+        }
+
+        const cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements,
+          style: [
+            {
+              selector: "node",
+              style: {
+                "background-color": "#2563eb",
+                shape: "ellipse",
+                width: 64,
+                height: 64,
+                label: "data(label)",
+                color: "#fff",
+                "font-size": 10,
+                "line-height": 1.1,
+                "text-valign": "center",
+                "text-halign": "center",
+                "text-wrap": "ellipsis",
+                "text-max-width": "48px",
+                "min-zoomed-font-size": 8
+              }
+            },
+            {
+              selector: "edge",
+              style: {
+                width: 2,
+                "line-color": "#94a3b8",
+                "target-arrow-color": "#94a3b8",
+                "target-arrow-shape": "triangle",
+                "curve-style": "bezier",
+                label: "data(label)"
+              }
+            }
+          ],
+          layout: { name: "cose" }
+        });
+
+        const nodeTitleEl = document.getElementById("node-title");
+        const nodeTypeEl = document.getElementById("node-type");
+        const nodeDescriptionEl = document.getElementById("node-description");
+
+        cy.on("tap", "node", (event) => {
+          const node = event.target;
+          nodeTitleEl.textContent = node.data("label") || node.id();
+          nodeTypeEl.textContent = node.data("entity_type") || "Unknown entity type";
+          nodeDescriptionEl.textContent =
+            node.data("description") || node.data("message") || "No description for this node.";
+        });
+
+        cy.on("tap", (event) => {
+          if (event.target === cy) {
+            nodeTitleEl.textContent = "Node details";
+            nodeTypeEl.textContent = "Entity type";
+            nodeDescriptionEl.textContent = "Click a node to see its description.";
+          }
+        });
+      }
+
+      initGraph().catch((error) => {
+        console.error(error);
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          '<p style="position:fixed;left:12px;bottom:12px;margin:0;padding:8px 10px;background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:6px;font:12px sans-serif;">Could not load graph data. Check the console and ensure <code>data.json</code> is being served.</p>'
+        );
+      });
+    </script>
+  </body>
+</html>

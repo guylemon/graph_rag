@@ -66,6 +66,31 @@ struct GraphExport {
     edges: Vec<EdgeExport>,
 }
 
+#[derive(Serialize)]
+struct CytoscapeDataExport {
+    id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    entity_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<String>,
+}
+
+#[derive(Serialize)]
+struct CytoscapeElementExport {
+    data: CytoscapeDataExport,
+}
+
+#[derive(Serialize)]
+struct CytoscapeGraphExport {
+    elements: Vec<CytoscapeElementExport>,
+}
+
 pub fn run() -> Result<(), AppError> {
     // Read input
     let mut input = String::new();
@@ -108,15 +133,17 @@ pub fn run() -> Result<(), AppError> {
         )?;
     }
 
+    let mut validated_relationships: Vec<&ExtractedRelationship> = Vec::new();
     for edge in extraction.relationships[0..].iter() {
         // filter invalid edges from LLM
-        if entity_set.contains(&edge.source_entity) && entity_set.contains(&edge.source_entity) {
+        if entity_set.contains(&edge.source_entity) && entity_set.contains(&edge.target_entity) {
             g.upsert_edge(
                 &edge.source_entity,
                 &edge.target_entity,
                 [("description", &edge.relationship_description)],
                 &edge.relationship_description,
             )?;
+            validated_relationships.push(edge);
         } else {
             println!(
                 "Invalid edge from {} -> {}",
@@ -136,8 +163,7 @@ pub fn run() -> Result<(), AppError> {
         })
         .collect();
 
-    let edges: Vec<EdgeExport> = extraction
-        .relationships
+    let edges: Vec<EdgeExport> = validated_relationships
         .iter()
         .map(|r| EdgeExport {
             id: r.source_entity.to_owned(),
@@ -156,6 +182,42 @@ pub fn run() -> Result<(), AppError> {
 
     fs::write("./output/graph.json", json)?;
     println!("Graph exported to graph.json");
+
+    // Transform and export for Cytoscape.js web viewer
+    let mut cytoscape_elements: Vec<CytoscapeElementExport> = extraction
+        .entities
+        .iter()
+        .map(|n| CytoscapeElementExport {
+            data: CytoscapeDataExport {
+                id: n.entity_name.to_owned(),
+                label: Some(n.entity_name.to_owned()),
+                entity_type: Some(n.entity_type.to_owned()),
+                description: Some(n.entity_description.to_owned()),
+                source: None,
+                target: None,
+            },
+        })
+        .collect();
+
+    cytoscape_elements.extend(validated_relationships.iter().enumerate().map(|(i, r)| {
+        CytoscapeElementExport {
+            data: CytoscapeDataExport {
+                id: format!("edge-{i}"),
+                label: Some(r.relationship_description.to_owned()),
+                entity_type: None,
+                description: None,
+                source: Some(r.source_entity.to_owned()),
+                target: Some(r.target_entity.to_owned()),
+            },
+        }
+    }));
+
+    let cytoscape_export = CytoscapeGraphExport {
+        elements: cytoscape_elements,
+    };
+    let cytoscape_json = serde_json::to_string_pretty(&cytoscape_export)?;
+    fs::write("./cytoscape/data.json", cytoscape_json)?;
+    println!("Graph exported to cytoscape/data.json");
 
     // // Query
     // println!("{:?}", g.stats()?); // GraphStats { nodes: 2, edges: 1 }
