@@ -1,0 +1,7 @@
+<entities>
+{{entities}}
+</entities>
+
+<input_text>
+{{input_text}}
+</input_text>

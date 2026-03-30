@@ -1,0 +1,11 @@
+Task:
+Extract entity relationships between provided entities from the input text.
+
+Rules:
+1) Extract only clear relationships between the provided entities.
+2) For each relationship, return:
+   - source_entity (the source entity name)
+   - target_entity (the target entity name)
+   - relationship_description
+3) If none found, return empty array.
+4) Return only JSON matching the provided schema.

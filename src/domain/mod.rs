@@ -4,12 +4,15 @@ use serde::Serialize;
 pub type AppError = Box<dyn std::error::Error>;
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ExtractionOutput {
+pub struct EntityExtractionOutput {
     pub entities: Vec<ExtractedEntity>,
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct RelationshipExtractionOutput {
     pub relationships: Vec<ExtractedRelationship>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExtractedEntity {
     pub entity_name: String,
     pub entity_type: String,
