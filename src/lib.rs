@@ -1,95 +1,15 @@
+mod domain;
+
 use graphqlite::Graph;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
 
+use crate::domain::*;
 use llm_msg::Message;
 use llm_msg::Role;
 use llm_provider::{ChatRequest, Format, Provider};
-
-type AppError = Box<dyn std::error::Error>;
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ExtractionOutput {
-    pub entities: Vec<ExtractedEntity>,
-    pub relationships: Vec<ExtractedRelationship>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ExtractedEntity {
-    pub entity_name: String,
-    pub entity_type: String,
-    pub entity_description: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ExtractedRelationship {
-    pub source_entity: String,
-    pub target_entity: String,
-    pub relationship_description: String,
-    pub relationship_strength: u8,
-}
-
-#[derive(Serialize)]
-struct NodeExport {
-    id: String,
-    value: String,
-}
-
-#[derive(Serialize)]
-struct EdgeExport {
-    id: String,
-    source: String,
-    target: String,
-}
-
-// Using cosmo-flow (npm) for now
-// {
-//   "version": 1,
-//   "nodes": [
-//     { "id": "b1", "value": "Root" },
-//     { "id": "b2", "value": "L1 - L" },
-//     { "id": "b3", "value": "L1 - R" }
-//   ],
-//   "edges": [
-//     { "id": "be1", "source": "b1", "target": "b2" },
-//     { "id": "be2", "source": "b1", "target": "b3" }
-//   ]
-// }
-#[derive(Serialize)]
-struct GraphExport {
-    version: u8,
-    nodes: Vec<NodeExport>,
-    edges: Vec<EdgeExport>,
-}
-
-#[derive(Serialize)]
-struct CytoscapeDataExport {
-    id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    label: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    entity_type: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    source: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    target: Option<String>,
-}
-
-#[derive(Serialize)]
-struct CytoscapeElementExport {
-    data: CytoscapeDataExport,
-}
-
-#[derive(Serialize)]
-struct CytoscapeGraphExport {
-    elements: Vec<CytoscapeElementExport>,
-}
 
 pub fn run() -> Result<(), AppError> {
     // Read input
