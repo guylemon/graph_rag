@@ -1,5 +1,6 @@
 use graphqlite::Graph;
 use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Read};
@@ -29,6 +30,39 @@ pub struct ExtractedRelationship {
     pub target_entity: String,
     pub relationship_description: String,
     pub relationship_strength: u8,
+}
+
+#[derive(Serialize)]
+struct NodeExport {
+    id: String,
+    value: String,
+}
+
+#[derive(Serialize)]
+struct EdgeExport {
+    id: String,
+    source: String,
+    target: String,
+}
+
+// Using cosmo-flow (npm) for now
+// {
+//   "version": 1,
+//   "nodes": [
+//     { "id": "b1", "value": "Root" },
+//     { "id": "b2", "value": "L1 - L" },
+//     { "id": "b3", "value": "L1 - R" }
+//   ],
+//   "edges": [
+//     { "id": "be1", "source": "b1", "target": "b2" },
+//     { "id": "be2", "source": "b1", "target": "b3" }
+//   ]
+// }
+#[derive(Serialize)]
+struct GraphExport {
+    version: u8,
+    nodes: Vec<NodeExport>,
+    edges: Vec<EdgeExport>,
 }
 
 pub fn run() -> Result<(), AppError> {
@@ -63,16 +97,16 @@ pub fn run() -> Result<(), AppError> {
     let g = Graph::open(":memory:")?;
 
     // Add nodes
-    for entity in extraction.entities {
+    for entity in extraction.entities[0..].iter() {
         g.upsert_node(
             &entity.entity_name,
-            [("description", entity.entity_description)],
+            [("description", &entity.entity_description)],
             &entity.entity_type,
         )?;
     }
 
     // Add edges
-    for edge in extraction.relationships {
+    for edge in extraction.relationships[0..].iter() {
         g.upsert_edge(
             &edge.source_entity,
             &edge.target_entity,
@@ -81,16 +115,47 @@ pub fn run() -> Result<(), AppError> {
         )?;
     }
 
-    // Query
-    println!("{:?}", g.stats()?); // GraphStats { nodes: 2, edges: 1 }
-    println!("{:?}", g.get_neighbors("APPLE")?);
-    //
-    // Graph algorithms
-    let ranks = g.pagerank(0.85, 20)?;
-    let communities = g.community_detection(10)?;
+    // transform for terminal display
+    let nodes: Vec<NodeExport> = extraction
+        .entities
+        .iter()
+        .map(|n| NodeExport {
+            id: n.entity_name.to_owned(),
+            value: n.entity_description.to_owned(),
+        })
+        .collect();
 
-    dbg!(ranks);
-    dbg!(communities);
+    let edges: Vec<EdgeExport> = extraction
+        .relationships
+        .iter()
+        .map(|r| EdgeExport {
+            id: r.source_entity.to_owned(),
+            source: r.source_entity.to_owned(),
+            target: r.target_entity.to_owned(),
+        })
+        .collect();
+
+    // Serialize and write to file
+    let export = GraphExport {
+        version: 1,
+        nodes,
+        edges,
+    };
+    let json = serde_json::to_string_pretty(&export)?;
+
+    fs::write("./output/graph.json", json)?;
+    println!("Graph exported to graph.json");
+
+    // // Query
+    // println!("{:?}", g.stats()?); // GraphStats { nodes: 2, edges: 1 }
+    // println!("{:?}", g.get_neighbors("APPLE")?);
+    // //
+    // // Graph algorithms
+    // let ranks = g.pagerank(0.85, 20)?;
+    // let communities = g.community_detection(10)?;
+    //
+    // dbg!(ranks);
+    // dbg!(communities);
 
     Ok(())
 }
