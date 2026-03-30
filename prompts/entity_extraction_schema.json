@@ -34,26 +34,7 @@
         },
         "required": ["entity_name", "entity_type", "entity_description"]
       }
-    },
-    "relationships": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "source_entity": { "type": "string" },
-          "target_entity": { "type": "string" },
-          "relationship_description": { "type": "string" },
-          "relationship_strength": { "type": "integer", "minimum": 1, "maximum": 10 }
-        },
-        "required": [
-          "source_entity",
-          "target_entity",
-          "relationship_description",
-          "relationship_strength"
-        ]
-      }
     }
   },
-  "required": ["entities", "relationships"]
+  "required": ["entities"]
 }

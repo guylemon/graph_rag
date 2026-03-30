@@ -7,17 +7,9 @@ Rules:
    - entity_name (uppercase canonical name)
    - entity_type (must be one of allowed types)
    - entity_description (concise but informative)
-3) Extract only clear relationships between extracted entities.
-4) For each relationship, return:
-   - source_entity
-   - target_entity
-   - relationship_description
-   - relationship_strength (integer 1-10)
-5) De-duplicate entities by canonical name.
-6) If none found, return empty arrays.
-7) Return only JSON matching the provided schema.
+3) Return only JSON matching the provided schema.
 
-EntityType reference:
+EntityType examples:
 - PERSON: Individual people or fictional characters (e.g., Albert Einstein, Sherlock Holmes).
 - ORGANIZATION: Companies, institutions, agencies, teams, or other formal groups (e.g., Google, United Nations).
 - LOCATION: Geographic places that are not political entities (e.g., Mount Everest, Nile River).
