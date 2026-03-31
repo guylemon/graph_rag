@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub(crate) struct AppConfig {
     pub(crate) ollama_base_url: String,
     pub(crate) graphqlite_db: String,
