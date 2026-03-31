@@ -1,9 +1,11 @@
 mod config;
+mod value_objects;
 
 use serde::Deserialize;
 use serde::Serialize;
 
 pub(crate) use config::AppConfig;
+pub(crate) use value_objects::*;
 
 pub type AppError = Box<dyn std::error::Error>;
 

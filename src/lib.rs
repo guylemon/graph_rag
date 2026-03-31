@@ -1,11 +1,16 @@
+mod adapters;
 mod domain;
+mod ports;
 mod service;
 
 use graphqlite::Graph;
+use llm_provider::Provider;
 use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Read};
 
+use crate::adapters::OllamaEntityExtractor;
+use crate::adapters::OllamaRelationshipExtractor;
 use crate::domain::*;
 use crate::service::KnowledgeGraphExtractor;
 
@@ -15,7 +20,12 @@ pub fn run() -> Result<(), AppError> {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
-    let knowledge_graph = KnowledgeGraphExtractor::new(app_config.clone()).execute(&input)?;
+    let ollama_config = llm_provider::Config::new(Some(&app_config.ollama_base_url));
+    let ollama_provider = Provider::Ollama(ollama_config);
+    let entity_extractor = OllamaEntityExtractor::new(&app_config, &ollama_provider)?;
+    let relationship_extractor = OllamaRelationshipExtractor::new(&app_config, &ollama_provider)?;
+    let knowledge_graph =
+        KnowledgeGraphExtractor::new(entity_extractor, relationship_extractor).execute(&input)?;
 
     // ----- Graph operations
     let g = Graph::open(&app_config.graphqlite_db)?;
