@@ -7,6 +7,13 @@ pub(crate) use config::AppConfig;
 
 pub type AppError = Box<dyn std::error::Error>;
 
+// TODO this domain object has invariants
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub(crate) struct KnowledgeGraph {
+    pub(crate) entities: Vec<ExtractedEntity>,
+    pub(crate) relationships: Vec<ExtractedRelationship>,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct EntityExtractionOutput {
     pub entities: Vec<ExtractedEntity>,
@@ -23,7 +30,7 @@ pub struct ExtractedEntity {
     pub entity_description: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ExtractedRelationship {
     pub source_entity: String,
     pub target_entity: String,
@@ -31,25 +38,12 @@ pub struct ExtractedRelationship {
     pub relationship_description: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ValidatedExtractedRelationship {
     pub source_entity: String,
     pub target_entity: String,
     pub keyword: String,
     pub relationship_description: String,
-}
-
-#[derive(Serialize)]
-pub struct NodeExport {
-    pub id: String,
-    pub value: String,
-}
-
-#[derive(Serialize)]
-pub struct EdgeExport {
-    pub id: String,
-    pub source: String,
-    pub target: String,
 }
 
 #[derive(Serialize)]
