@@ -11,12 +11,19 @@
           "source_entity": { "type": "string" },
           "target_entity": { "type": "string" },
           "relationship_description": { "type": "string" },
+          "relationship_keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "relationship_strength": { "type": "integer", "minimum": 1, "maximum": 10 }
         },
         "required": [
           "source_entity",
           "target_entity",
           "relationship_description",
+          "relationship_keywords",
           "relationship_strength"
         ]
       }

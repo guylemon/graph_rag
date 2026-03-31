@@ -36,17 +36,27 @@ pub fn run() -> Result<(), AppError> {
         )?;
     }
 
-    let mut validated_relationships: Vec<&ExtractedRelationship> = Vec::new();
+    let mut validated_relationships: Vec<ValidatedExtractedRelationship> = Vec::new();
     for edge in relationships[0..].iter() {
         // filter invalid edges from LLM
         if entity_set.contains(&edge.source_entity) && entity_set.contains(&edge.target_entity) {
-            g.upsert_edge(
-                &edge.source_entity,
-                &edge.target_entity,
-                [("description", &edge.relationship_description)],
-                &edge.relationship_description,
-            )?;
-            validated_relationships.push(edge);
+            for keyword in edge.relationship_keywords[0..].iter() {
+                g.upsert_edge(
+                    &edge.source_entity,
+                    &edge.target_entity,
+                    [("description", &edge.relationship_description)],
+                    keyword,
+                )?;
+
+                let validated = ValidatedExtractedRelationship {
+                    source_entity: edge.source_entity.to_owned(),
+                    target_entity: edge.target_entity.to_owned(),
+                    relationship_description: edge.relationship_description.to_owned(),
+                    keyword: keyword.to_owned(),
+                };
+
+                validated_relationships.push(validated);
+            }
         } else {
             println!(
                 "Invalid edge from {} -> {}",
@@ -104,9 +114,9 @@ pub fn run() -> Result<(), AppError> {
         CytoscapeElementExport {
             data: CytoscapeDataExport {
                 id: format!("edge-{i}"),
-                label: Some(r.relationship_description.to_owned()),
+                label: Some(r.keyword.to_owned()),
                 entity_type: None,
-                description: None,
+                description: Some(r.relationship_description.to_owned()),
                 source: Some(r.source_entity.to_owned()),
                 target: Some(r.target_entity.to_owned()),
             },
@@ -134,7 +144,10 @@ pub fn run() -> Result<(), AppError> {
     Ok(())
 }
 
-fn extract_entity_mentions(provider: &Provider, input: &str) -> Result<Vec<ExtractedEntity>, AppError> {
+fn extract_entity_mentions(
+    provider: &Provider,
+    input: &str,
+) -> Result<Vec<ExtractedEntity>, AppError> {
     let sys_content = fs::read_to_string("./prompts/entity_identification_sys.txt")?;
     let sys_prompt = Message::new(Role::System, &sys_content);
     let template = fs::read_to_string("./prompts/entity_identification_user.txt")?;
@@ -158,7 +171,11 @@ fn extract_entity_mentions(provider: &Provider, input: &str) -> Result<Vec<Extra
     Ok(extraction.entities)
 }
 
-fn extract_relationship_mentions(provider: &Provider, input: &str, entities: &Vec<ExtractedEntity>) -> Result<Vec<ExtractedRelationship>, AppError> {
+fn extract_relationship_mentions(
+    provider: &Provider,
+    input: &str,
+    entities: &Vec<ExtractedEntity>,
+) -> Result<Vec<ExtractedRelationship>, AppError> {
     let sys_content = fs::read_to_string("./prompts/relationship_identification_sys.txt")?;
     let sys_prompt = Message::new(Role::System, &sys_content);
     let template = fs::read_to_string("./prompts/relationship_identification_user.txt")?;
