@@ -1,5 +1,9 @@
+mod config;
+
 use serde::Deserialize;
 use serde::Serialize;
+
+pub(crate) use config::AppConfig;
 
 pub type AppError = Box<dyn std::error::Error>;
 
@@ -46,26 +50,6 @@ pub struct EdgeExport {
     pub id: String,
     pub source: String,
     pub target: String,
-}
-
-// Using cosmo-flow (npm) for now
-// {
-//   "version": 1,
-//   "nodes": [
-//     { "id": "b1", "value": "Root" },
-//     { "id": "b2", "value": "L1 - L" },
-//     { "id": "b3", "value": "L1 - R" }
-//   ],
-//   "edges": [
-//     { "id": "be1", "source": "b1", "target": "b2" },
-//     { "id": "be2", "source": "b1", "target": "b3" }
-//   ]
-// }
-#[derive(Serialize)]
-pub struct GraphExport {
-    pub version: u8,
-    pub nodes: Vec<NodeExport>,
-    pub edges: Vec<EdgeExport>,
 }
 
 #[derive(Serialize)]
