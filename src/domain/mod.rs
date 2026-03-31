@@ -23,6 +23,15 @@ pub struct ExtractedEntity {
 pub struct ExtractedRelationship {
     pub source_entity: String,
     pub target_entity: String,
+    pub relationship_keywords: Vec<String>,
+    pub relationship_description: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ValidatedExtractedRelationship {
+    pub source_entity: String,
+    pub target_entity: String,
+    pub keyword: String,
     pub relationship_description: String,
 }
 
