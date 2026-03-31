@@ -12,18 +12,20 @@ use llm_msg::Role;
 use llm_provider::{ChatRequest, Format, Provider};
 
 pub fn run() -> Result<(), AppError> {
+    let app_config = AppConfig::new();
+
     // Read input
     let mut input = String::new();
     io::stdin().read_to_string(&mut input)?;
 
     // Extract entity mentions
-    let ollama_config = llm_provider::Config::new(Some("http://studio:11434/api"));
+    let ollama_config = llm_provider::Config::new(Some(&app_config.ollama_base_url));
     let provider = Provider::Ollama(ollama_config);
-    let entities = extract_entity_mentions(&provider, &input)?;
-    let relationships = extract_relationship_mentions(&provider, &input, &entities)?;
+    let entities = extract_entity_mentions(&app_config, &provider, &input)?;
+    let relationships = extract_relationship_mentions(&app_config, &provider, &input, &entities)?;
 
     // ----- Graph operations
-    let g = Graph::open(":memory:")?;
+    let g = Graph::open(&app_config.graphqlite_db)?;
 
     // Add nodes
     let mut entity_set: HashSet<String> = HashSet::new();
@@ -66,35 +68,6 @@ pub fn run() -> Result<(), AppError> {
         }
     }
 
-    // transform and export for terminal display
-    let nodes: Vec<NodeExport> = entities
-        .iter()
-        .map(|n| NodeExport {
-            id: n.entity_name.to_owned(),
-            value: n.entity_description.to_owned(),
-        })
-        .collect();
-
-    let edges: Vec<EdgeExport> = validated_relationships
-        .iter()
-        .map(|r| EdgeExport {
-            id: r.source_entity.to_owned(),
-            source: r.source_entity.to_owned(),
-            target: r.target_entity.to_owned(),
-        })
-        .collect();
-
-    // Serialize and write to file
-    let export = GraphExport {
-        version: 1,
-        nodes,
-        edges,
-    };
-    let json = serde_json::to_string_pretty(&export)?;
-
-    fs::write("./output/graph.json", json)?;
-    println!("Graph exported to graph.json");
-
     // Transform and export for Cytoscape.js web viewer
     let mut cytoscape_elements: Vec<CytoscapeElementExport> = entities
         .iter()
@@ -127,8 +100,8 @@ pub fn run() -> Result<(), AppError> {
         elements: cytoscape_elements,
     };
     let cytoscape_json = serde_json::to_string_pretty(&cytoscape_export)?;
-    fs::write("./cytoscape/data.json", cytoscape_json)?;
-    println!("Graph exported to cytoscape/data.json");
+    fs::write(&app_config.cytoscape_json_file, cytoscape_json)?;
+    println!("Graph exported to {}", &app_config.cytoscape_json_file);
 
     // // Query
     // println!("{:?}", g.stats()?); // GraphStats { nodes: 2, edges: 1 }
@@ -145,18 +118,19 @@ pub fn run() -> Result<(), AppError> {
 }
 
 fn extract_entity_mentions(
+    app_config: &AppConfig,
     provider: &Provider,
     input: &str,
 ) -> Result<Vec<ExtractedEntity>, AppError> {
-    let sys_content = fs::read_to_string("./prompts/entity_identification_sys.txt")?;
+    let sys_content = fs::read_to_string(&app_config.entity_id_sys_prompt)?;
     let sys_prompt = Message::new(Role::System, &sys_content);
-    let template = fs::read_to_string("./prompts/entity_identification_user.txt")?;
+    let template = fs::read_to_string(&app_config.entity_id_user_prompt)?;
     let mut variables = HashMap::new();
     variables.insert("input_text".to_string(), input.to_owned());
     let user_prompt = Message::new(Role::User, &llm_prompt::substitute(&template, &variables)?);
-    let schema_raw = fs::read_to_string("./prompts/entity_extraction_schema.json")?;
+    let schema_raw = fs::read_to_string(&app_config.entity_id_llm_schema)?;
     let format: Format = Format::Schema(serde_json::from_str(&schema_raw)?);
-    let chat_request = ChatRequest::builder("qwen3:8b")
+    let chat_request = ChatRequest::builder(&app_config.entity_id_llm_model)
         .add_message(sys_prompt)
         .add_message(user_prompt)
         .format(format)
@@ -172,21 +146,22 @@ fn extract_entity_mentions(
 }
 
 fn extract_relationship_mentions(
+    app_config: &AppConfig,
     provider: &Provider,
     input: &str,
     entities: &Vec<ExtractedEntity>,
 ) -> Result<Vec<ExtractedRelationship>, AppError> {
-    let sys_content = fs::read_to_string("./prompts/relationship_identification_sys.txt")?;
+    let sys_content = fs::read_to_string(&app_config.rel_id_sys_prompt)?;
     let sys_prompt = Message::new(Role::System, &sys_content);
-    let template = fs::read_to_string("./prompts/relationship_identification_user.txt")?;
+    let template = fs::read_to_string(&app_config.rel_id_user_prompt)?;
     let mut variables = HashMap::new();
     let entities = serde_json::to_string(entities)?;
     variables.insert("input_text".to_string(), input.to_owned());
     variables.insert("entities".to_string(), entities.to_owned());
     let user_prompt = Message::new(Role::User, &llm_prompt::substitute(&template, &variables)?);
-    let schema_raw = fs::read_to_string("./prompts/entity_relationship_schema.json")?;
+    let schema_raw = fs::read_to_string(&app_config.rel_id_llm_schema)?;
     let format: Format = Format::Schema(serde_json::from_str(&schema_raw)?);
-    let chat_request = ChatRequest::builder("qwen3:8b")
+    let chat_request = ChatRequest::builder(&app_config.rel_id_llm_model)
         .add_message(sys_prompt)
         .add_message(user_prompt)
         .format(format)
