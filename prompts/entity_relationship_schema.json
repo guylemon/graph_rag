@@ -8,10 +8,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "source_entity": { "type": "string" },
-          "target_entity": { "type": "string" },
-          "relationship_description": { "type": "string" },
-          "relationship_keywords": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "description": { "type": "string" },
+          "keywords": {
             "type": "array",
             "items": {
               "type": "string"
@@ -20,10 +20,10 @@
           "relationship_strength": { "type": "integer", "minimum": 1, "maximum": 10 }
         },
         "required": [
-          "source_entity",
-          "target_entity",
-          "relationship_description",
-          "relationship_keywords",
+          "source",
+          "target",
+          "description",
+          "keywords",
           "relationship_strength"
         ]
       }

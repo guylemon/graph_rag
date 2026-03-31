@@ -41,34 +41,13 @@ pub fn run() -> Result<(), AppError> {
         )?;
     }
 
-    let mut validated_relationships: Vec<ValidatedExtractedRelationship> = Vec::new();
     for edge in knowledge_graph.relationships[0..].iter() {
-        // filter invalid edges from LLM
-        if entity_set.contains(&edge.source_entity) && entity_set.contains(&edge.target_entity) {
-            for keyword in edge.relationship_keywords[0..].iter() {
-                g.upsert_edge(
-                    &edge.source_entity,
-                    &edge.target_entity,
-                    [("description", &edge.relationship_description)],
-                    keyword,
-                )?;
-
-                let validated = ValidatedExtractedRelationship {
-                    source_entity: edge.source_entity.to_owned(),
-                    target_entity: edge.target_entity.to_owned(),
-                    relationship_description: edge.relationship_description.to_owned(),
-                    keyword: keyword.to_owned(),
-                };
-
-                validated_relationships.push(validated);
-            }
-        } else {
-            println!(
-                "Invalid edge from {} -> {}",
-                &edge.source_entity, &edge.target_entity
-            );
-            continue;
-        }
+        g.upsert_edge(
+            &edge.source,
+            &edge.target,
+            [("description", &edge.description)],
+            &edge.keyword,
+        )?;
     }
 
     // Transform and export for Cytoscape.js web viewer
@@ -87,18 +66,22 @@ pub fn run() -> Result<(), AppError> {
         })
         .collect();
 
-    cytoscape_elements.extend(validated_relationships.iter().enumerate().map(|(i, r)| {
-        CytoscapeElementExport {
-            data: CytoscapeDataExport {
-                id: format!("edge-{i}"),
-                label: Some(r.keyword.to_owned()),
-                entity_type: None,
-                description: Some(r.relationship_description.to_owned()),
-                source: Some(r.source_entity.to_owned()),
-                target: Some(r.target_entity.to_owned()),
-            },
-        }
-    }));
+    cytoscape_elements.extend(
+        knowledge_graph
+            .relationships
+            .iter()
+            .enumerate()
+            .map(|(i, r)| CytoscapeElementExport {
+                data: CytoscapeDataExport {
+                    id: format!("edge-{i}"),
+                    label: Some(r.keyword.to_owned()),
+                    entity_type: None,
+                    description: Some(r.description.to_owned()),
+                    source: Some(r.source.to_owned()),
+                    target: Some(r.target.to_owned()),
+                },
+            }),
+    );
 
     let cytoscape_export = CytoscapeGraphExport {
         elements: cytoscape_elements,
