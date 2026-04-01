@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::domain::util::deduplicate;
+use crate::domain::GraphNode;
 
 #[derive(Clone, Debug, Eq, Deserialize, Hash, PartialEq, Serialize)]
 pub(crate) struct RelationshipMention {
@@ -30,10 +31,12 @@ pub(crate) struct GraphEdge {
 /// - expands each relationship into one `GraphEdge` per keyword.
 pub(crate) fn normalize_relationships(
     relationships: Vec<RelationshipMention>,
-    seen_entities: HashSet<String>,
+    entities: &[GraphNode],
 ) -> Vec<GraphEdge> {
     let max_entity_len = 200;
     let max_keyword_len = 100;
+
+    let seen_entities = HashSet::from_iter(entities.iter().map(|e| e.name.clone()));
 
     relationships
         .into_iter()
@@ -154,13 +157,20 @@ mod tests {
         }
     }
 
-    fn seen_entities(entities: &[&str]) -> HashSet<String> {
-        entities.iter().map(|entity| (*entity).to_owned()).collect()
+    fn seen_entities(entities: &[&str]) -> Vec<GraphNode> {
+        entities
+            .iter()
+            .map(|entity| GraphNode {
+                name: (*entity).to_owned(),
+                entity_type: "entity".to_owned(),
+                description: "desc".to_owned(),
+            })
+            .collect()
     }
 
     #[test]
     fn standardize_relationships_returns_empty_for_empty_input() {
-        let out = normalize_relationships(vec![], seen_entities(&[]));
+        let out = normalize_relationships(vec![], &seen_entities(&[]));
 
         assert!(out.is_empty());
     }
@@ -169,7 +179,7 @@ mod tests {
     fn standardize_relationships_expands_single_relationship_with_single_keyword() {
         let input = vec![rel("A", "B", &["is_a"], "A is a B")];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
 
         assert_eq!(out, vec![vrel("A", "B", "is_a", "A is a B")]);
     }
@@ -183,7 +193,7 @@ mod tests {
             "desc",
         )];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
 
         assert_eq!(
             out,
@@ -202,7 +212,7 @@ mod tests {
             rel("C", "D", &["k3"], "d2"),
         ];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B", "C", "D"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B", "C", "D"]));
 
         assert_eq!(
             out,
@@ -218,14 +228,14 @@ mod tests {
     fn standardize_relationships_relationship_with_no_keywords_contributes_no_rows() {
         let input = vec![rel("A", "B", &[], "desc")];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
 
         assert!(out.is_empty());
     }
 
     #[test]
     fn standardize_relationships_returns_empty_for_empty_input_when_seen_entities_non_empty() {
-        let out = normalize_relationships(vec![], seen_entities(&["A", "B"]));
+        let out = normalize_relationships(vec![], &seen_entities(&["A", "B"]));
 
         assert!(out.is_empty());
     }
@@ -234,7 +244,7 @@ mod tests {
     fn standardize_relationships_filters_everything_when_seen_entities_empty() {
         let input = vec![rel("A", "B", &["k1"], "d1"), rel("B", "C", &["k2"], "d2")];
 
-        let out = normalize_relationships(input, seen_entities(&[]));
+        let out = normalize_relationships(input, &seen_entities(&[]));
 
         assert!(out.is_empty());
     }
@@ -247,7 +257,7 @@ mod tests {
             rel("Y", "B", &["k3"], "invalid_source"),
         ];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
 
         assert_eq!(out, vec![vrel("A", "B", "k1", "valid")]);
     }
@@ -260,7 +270,7 @@ mod tests {
             rel("B", "A", &["k3"], "second_valid"),
         ];
 
-        let out = normalize_relationships(input, seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
 
         assert_eq!(
             out,
@@ -275,7 +285,7 @@ mod tests {
     fn standardize_relationships_keeps_self_loop_if_entity_seen() {
         let input = vec![rel("A", "A", &["k1"], "self")];
 
-        let out = normalize_relationships(input, seen_entities(&["A"]));
+        let out = normalize_relationships(input, &seen_entities(&["A"]));
 
         assert_eq!(out, vec![vrel("A", "A", "k1", "self")]);
     }
@@ -284,7 +294,7 @@ mod tests {
     fn standardize_relationships_uses_case_sensitive_matching() {
         let input = vec![rel("Alice", "Bob", &["k1"], "desc")];
 
-        let out = normalize_relationships(input, seen_entities(&["alice", "bob"]));
+        let out = normalize_relationships(input, &seen_entities(&["alice", "bob"]));
 
         assert!(out.is_empty());
     }

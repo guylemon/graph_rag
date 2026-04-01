@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::domain::*;
 use crate::ports::EntityExtractionPort;
 use crate::ports::RelationshipExtractionPort;
@@ -23,25 +21,23 @@ where
 
     pub(crate) fn execute(&self, input: &str) -> Result<KnowledgeGraph, AppError> {
         let entity_request = EntityExtractionRequest { input };
-        let mut entities: Vec<ExtractedEntity> =
+        let raw_entities: Vec<EntityMention> =
             self.entity_extractor.extract_entities(entity_request)?;
 
-        // De-duplicate entities
-        let mut seen_entities = HashSet::new();
-        entities.retain(|item| seen_entities.insert(item.entity_name.clone()));
+        let nodes = normalize_entities(raw_entities);
 
         let relationship_request = RelationshipExtractionRequest {
             input,
-            entities: &entities,
+            entities: &nodes
         };
         let raw_relationships = self
             .relationship_extractor
             .extract_relationships(relationship_request)?;
 
-        let relationships = normalize_relationships(raw_relationships, seen_entities);
+        let relationships = normalize_relationships(raw_relationships, &nodes);
 
         Ok(KnowledgeGraph {
-            entities,
+            entities: nodes,
             relationships,
         })
     }
