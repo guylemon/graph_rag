@@ -1,5 +1,5 @@
 use crate::ExtractedEntity;
-use crate::ExtractedRelationship;
+use crate::RelationshipMention;
 
 pub(crate) struct EntityExtractionRequest<'a> {
     pub(crate) input: &'a str,
@@ -14,4 +14,4 @@ pub(crate) struct RelationshipExtractionRequest<'a, 'e> {
 }
 
 // TODO refactor as DTO if needed later
-pub(crate) type RelationshipExtractionResponse = Vec<ExtractedRelationship>;
+pub(crate) type RelationshipExtractionResponse = Vec<RelationshipMention>;

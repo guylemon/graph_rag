@@ -1,10 +1,13 @@
 mod config;
+mod util;
+mod relationships;
 mod value_objects;
 
 use serde::Deserialize;
 use serde::Serialize;
 
 pub(crate) use config::AppConfig;
+pub(crate) use relationships::*;
 pub(crate) use value_objects::*;
 
 pub type AppError = Box<dyn std::error::Error>;
@@ -13,7 +16,7 @@ pub type AppError = Box<dyn std::error::Error>;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct KnowledgeGraph {
     pub(crate) entities: Vec<ExtractedEntity>,
-    pub(crate) relationships: Vec<ExtractedRelationship>,
+    pub(crate) relationships: Vec<GraphEdge>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -22,7 +25,7 @@ pub struct EntityExtractionOutput {
 }
 #[derive(Debug, Deserialize, Clone)]
 pub struct RelationshipExtractionOutput {
-    pub relationships: Vec<ExtractedRelationship>,
+    pub relationships: Vec<RelationshipMention>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,22 +33,6 @@ pub struct ExtractedEntity {
     pub entity_name: String,
     pub entity_type: String,
     pub entity_description: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ExtractedRelationship {
-    pub source_entity: String,
-    pub target_entity: String,
-    pub relationship_keywords: Vec<String>,
-    pub relationship_description: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ValidatedExtractedRelationship {
-    pub source_entity: String,
-    pub target_entity: String,
-    pub keyword: String,
-    pub relationship_description: String,
 }
 
 #[derive(Serialize)]
