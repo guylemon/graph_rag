@@ -3,8 +3,8 @@ use serde::Serialize;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use crate::domain::util::deduplicate;
 use crate::domain::GraphNode;
+use crate::domain::util::deduplicate;
 
 #[derive(Clone, Debug, Eq, Deserialize, Hash, PartialEq, Serialize)]
 pub(crate) struct RelationshipMention {
