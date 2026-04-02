@@ -2,6 +2,14 @@
 {{entities}}
 </entities>
 
+<allowed_pairing_rules>
+{{allowed_rules}}
+</allowed_pairing_rules>
+
+<repair_context>
+{{repair_context}}
+</repair_context>
+
 <input_text>
 {{input_text}}
 </input_text>

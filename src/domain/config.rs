@@ -22,11 +22,11 @@ impl AppConfig {
             entity_id_sys_prompt: "./prompts/entity_identification_sys.txt".to_owned(),
             entity_id_user_prompt: "./prompts/entity_identification_user.txt".to_owned(),
             entity_id_llm_schema: "./prompts/entity_extraction_schema.json".to_owned(),
-            entity_id_llm_model: "qwen3:8b".to_owned(),
+            entity_id_llm_model: "granite4:latest".to_owned(),
             rel_id_sys_prompt: "./prompts/relationship_identification_sys.txt".to_owned(),
             rel_id_user_prompt: "./prompts/relationship_identification_user.txt".to_owned(),
             rel_id_llm_schema: "./prompts/entity_relationship_schema.json".to_owned(),
-            rel_id_llm_model: "qwen3:8b".to_owned(),
+            rel_id_llm_model: "granite4:latest".to_owned(),
         }
     }
 }

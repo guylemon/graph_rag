@@ -1,5 +1,6 @@
 mod config;
 mod entities;
+mod invariants;
 mod relationships;
 mod util;
 mod value_objects;
@@ -9,6 +10,7 @@ use serde::Serialize;
 
 pub(crate) use config::AppConfig;
 pub(crate) use entities::*;
+pub(crate) use invariants::*;
 pub(crate) use relationships::*;
 pub(crate) use value_objects::*;
 

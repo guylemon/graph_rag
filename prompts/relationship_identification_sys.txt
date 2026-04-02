@@ -2,25 +2,27 @@
 Extract relationships between the provided entities from the input text.
 
 ## Rules:
-1) Only extract relationships between whose type is allowed in the schema.
+1) Only extract relationships whose source and target entity types match the allowed pairing rules provided in the user message.
+2) Only use entity names exactly as they appear in the provided entity list.
 3) For each relationship, extract the following fields:
     - `source`: The name of the source entity. Ensure **consistent naming** with entity extraction.
     - `target`: The name of the target entity. Ensure **consistent naming** with entity extraction.
     - `keywords`: One or more allowed relationship keywords summarizing the overarching nature, concepts, or themes of the relationship.
     - `description`: A concise explanation of the nature of the relationship between the source and target entities, providing a clear rationale for their connection.
+4) If no valid relationship is supported by the text, return an empty relationships array.
 
 ## Relationship keyword reference
 
 - WORKED_AT: Person or Author worked at Organization
 - RELATED_TO: General semantic relationship between entities
-- LOCATED_IN: Entity is physically located in a Location
+- LOCATED_IN: Author, person, organization, event, product, or lifeform is located in a Location
 - COLLABORATED_WITH: Collaboration between authors or persons
 - PART_OF: Hierarchical membership or composition
-- CREATED: Person or Organization created a Product, Technology, or Concept
-- USES: Entity uses technology or product
+- CREATED: Author, person, or organization created a Product, Technology, or Concept
+- USES: Author, person, organization, or lifeform uses technology or product
 - IMPLEMENTS: Technology implements concept
-- PARTICIPATED_IN: Entity participated in an event
+- PARTICIPATED_IN: Author, person, or organization participated in an event
 - OCCURRED_IN: Event occurred in location
 - AFFILIATED_WITH: Professional affiliation
 - MENTIONED_WITH: Co-occurrence in same context (chunk)
-- FOUNDED: Person founded organization
+- FOUNDED: Person or Author founded organization

@@ -3,12 +3,13 @@ Extract all entities from the input text according to the rules below.
 
 ## Rules:
 1) Extract all entities from the text that have the following types:
+  - AUTHOR: People identified primarily by authorship, writing, or publication context
   - CONCEPT: Theoretical ideas, methodologies, approaches
   - EVENT: Conferences, releases, historical events
   - LIFEFORM: Non-human lifeforms like plants, animals, insects
   - LOCATION: Cities, countries, regions
   - ORGANIZATION: Companies, institutions, or universities
-  - PERSON: People mentioned in the chunk text
+  - PERSON: People mentioned in the chunk text who are not best classified as AUTHOR
   - PRODUCT: Software products, platforms, services
   - TECHNOLOGY: Frameworks, programming languages, algorithms
 2) For each entity, return:
