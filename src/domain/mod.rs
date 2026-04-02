@@ -1,12 +1,14 @@
 mod config;
-mod util;
+mod entities;
 mod relationships;
+mod util;
 mod value_objects;
 
 use serde::Deserialize;
 use serde::Serialize;
 
 pub(crate) use config::AppConfig;
+pub(crate) use entities::*;
 pub(crate) use relationships::*;
 pub(crate) use value_objects::*;
 
@@ -15,24 +17,17 @@ pub type AppError = Box<dyn std::error::Error>;
 // TODO this domain object has invariants
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct KnowledgeGraph {
-    pub(crate) entities: Vec<ExtractedEntity>,
+    pub(crate) entities: Vec<GraphNode>,
     pub(crate) relationships: Vec<GraphEdge>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct EntityExtractionOutput {
-    pub entities: Vec<ExtractedEntity>,
+    pub entities: Vec<EntityMention>,
 }
 #[derive(Debug, Deserialize, Clone)]
 pub struct RelationshipExtractionOutput {
     pub relationships: Vec<RelationshipMention>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ExtractedEntity {
-    pub entity_name: String,
-    pub entity_type: String,
-    pub entity_description: String,
 }
 
 #[derive(Serialize)]

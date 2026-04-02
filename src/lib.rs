@@ -33,10 +33,10 @@ pub fn run() -> Result<(), AppError> {
     // Add nodes
     let mut entity_set: HashSet<String> = HashSet::new();
     for entity in knowledge_graph.entities[0..].iter() {
-        entity_set.insert(entity.entity_name.to_owned());
+        entity_set.insert(entity.name.to_owned());
         g.upsert_node(
-            &entity.entity_name,
-            [("description", &entity.entity_description)],
+            &entity.name,
+            [("description", &entity.description)],
             &entity.entity_type,
         )?;
     }
@@ -56,10 +56,10 @@ pub fn run() -> Result<(), AppError> {
         .iter()
         .map(|n| CytoscapeElementExport {
             data: CytoscapeDataExport {
-                id: n.entity_name.to_owned(),
-                label: Some(n.entity_name.to_owned()),
+                id: n.name.to_owned(),
+                label: Some(n.name.to_owned()),
                 entity_type: Some(n.entity_type.to_owned()),
-                description: Some(n.entity_description.to_owned()),
+                description: Some(n.description.to_owned()),
                 source: None,
                 target: None,
             },
