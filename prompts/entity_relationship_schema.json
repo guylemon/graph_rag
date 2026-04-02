@@ -14,7 +14,22 @@
           "keywords": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "WORKED_AT",
+                "RELATED_TO",
+                "LOCATED_IN",
+                "COLLABORATED_WITH",
+                "PART_OF",
+                "CREATED",
+                "USES",
+                "IMPLEMENTS",
+                "PARTICIPATED_IN",
+                "OCCURRED_IN",
+                "AFFILIATED_WITH",
+                "MENTIONED_WITH",
+                "FOUNDED"
+              ]
             }
           },
           "relationship_strength": { "type": "integer", "minimum": 1, "maximum": 10 }
