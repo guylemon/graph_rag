@@ -20,15 +20,33 @@ where
     }
 
     pub(crate) fn execute(&self, input: &str) -> Result<KnowledgeGraph, AppError> {
+        let entities = self.extract_nodes(input)?;
+        let relationships = self.extract_relationships(input, &entities)?;
+
+        Ok(KnowledgeGraph {
+            entities,
+            relationships,
+        })
+    }
+
+    fn extract_nodes(&self, input: &str) -> Result<Vec<GraphNode>, AppError> {
         let entity_request = EntityExtractionRequest { input };
         let raw_entities: Vec<EntityMention> =
             self.entity_extractor.extract_entities(entity_request)?;
 
         let nodes = normalize_entities(raw_entities);
 
+        Ok(nodes)
+    }
+
+    fn extract_relationships(
+        &self,
+        input: &str,
+        entities: &Vec<GraphNode>,
+    ) -> Result<Vec<GraphEdge>, AppError> {
         let relationship_request = RelationshipExtractionRequest {
             input,
-            entities: &nodes
+            entities: &entities,
         };
         let raw_relationships = self
             .relationship_extractor
@@ -36,9 +54,6 @@ where
 
         let relationships = normalize_relationships(raw_relationships, &nodes);
 
-        Ok(KnowledgeGraph {
-            entities: nodes,
-            relationships,
-        })
+        Ok(relationships)
     }
 }
