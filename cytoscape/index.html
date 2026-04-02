@@ -19,9 +19,8 @@
         display: block;
       }
 
-      #node-info {
+      .info-panel {
         position: fixed;
-        top: 12px;
         right: 12px;
         width: min(320px, calc(100vw - 24px));
         margin: 0;
@@ -35,12 +34,20 @@
         z-index: 1;
       }
 
-      #node-info h2 {
+      #node-info {
+        top: 12px;
+      }
+
+      #edge-info {
+        top: 144px;
+      }
+
+      .info-panel h2 {
         margin: 0 0 6px;
         font-size: 14px;
       }
 
-      #node-type {
+      .info-label {
         margin: 0 0 6px;
         color: #334155;
         font-size: 12px;
@@ -48,17 +55,39 @@
         letter-spacing: 0.04em;
       }
 
-      #node-description {
+      .info-body {
         margin: 0;
+      }
+
+      #edge-route {
+        margin: 0 0 6px;
+        color: #334155;
+      }
+
+      @media (max-width: 720px) {
+        #node-info,
+        #edge-info {
+          width: min(320px, calc(100vw - 24px));
+        }
+
+        #edge-info {
+          top: auto;
+          bottom: 12px;
+        }
       }
     </style>
   </head>
   <body>
     <div id="cy"></div>
-    <aside id="node-info" aria-live="polite">
+    <aside id="node-info" class="info-panel" aria-live="polite">
       <h2 id="node-title">Node details</h2>
-      <p id="node-type">Entity type</p>
-      <p id="node-description">Click a node to see its description.</p>
+      <p id="node-type" class="info-label">Entity type</p>
+      <p id="node-description" class="info-body">Click a node to see its description.</p>
+    </aside>
+    <aside id="edge-info" class="info-panel" aria-live="polite">
+      <h2 id="edge-title">Edge details</h2>
+      <p id="edge-route" class="info-label">Source -> Target</p>
+      <p id="edge-description" class="info-body">Click an edge to see its relationship metadata.</p>
     </aside>
 
     <script src="./cytoscape.min.js"></script>
@@ -116,6 +145,21 @@
         const nodeTitleEl = document.getElementById("node-title");
         const nodeTypeEl = document.getElementById("node-type");
         const nodeDescriptionEl = document.getElementById("node-description");
+        const edgeTitleEl = document.getElementById("edge-title");
+        const edgeRouteEl = document.getElementById("edge-route");
+        const edgeDescriptionEl = document.getElementById("edge-description");
+
+        function resetNodeInfo() {
+          nodeTitleEl.textContent = "Node details";
+          nodeTypeEl.textContent = "Entity type";
+          nodeDescriptionEl.textContent = "Click a node to see its description.";
+        }
+
+        function resetEdgeInfo() {
+          edgeTitleEl.textContent = "Edge details";
+          edgeRouteEl.textContent = "Source -> Target";
+          edgeDescriptionEl.textContent = "Click an edge to see its relationship metadata.";
+        }
 
         cy.on("tap", "node", (event) => {
           const node = event.target;
@@ -125,13 +169,26 @@
             node.data("description") || node.data("message") || "No description for this node.";
         });
 
+        cy.on("tap", "edge", (event) => {
+          const edge = event.target;
+          const source = edge.data("source") || "Unknown source";
+          const target = edge.data("target") || "Unknown target";
+
+          edgeTitleEl.textContent = edge.data("label") || edge.id();
+          edgeRouteEl.textContent = `${source} -> ${target}`;
+          edgeDescriptionEl.textContent =
+            edge.data("description") || "No description for this edge.";
+        });
+
         cy.on("tap", (event) => {
           if (event.target === cy) {
-            nodeTitleEl.textContent = "Node details";
-            nodeTypeEl.textContent = "Entity type";
-            nodeDescriptionEl.textContent = "Click a node to see its description.";
+            resetNodeInfo();
+            resetEdgeInfo();
           }
         });
+
+        resetNodeInfo();
+        resetEdgeInfo();
       }
 
       initGraph().catch((error) => {
