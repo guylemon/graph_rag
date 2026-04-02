@@ -12,22 +12,14 @@
           "entity_type": {
             "type": "string",
             "enum": [
-              "PERSON",
-              "ORGANIZATION",
-              "LOCATION",
-              "GPE",
-              "DATE",
-              "TIME",
-              "MONEY",
-              "PERCENT",
-              "FACILITY",
-              "PRODUCT",
+              "CONCEPT",
               "EVENT",
-              "WORK_OF_ART",
-              "LANGUAGE",
-              "LAW",
-              "NORP",
-              "THING"
+              "LIFEFORM",
+              "LOCATION",
+              "ORGANIZATION",
+              "PERSON",
+              "PRODUCT",
+              "TECHNOLOGY"
             ]
           },
           "entity_description": { "type": "string" }
@@ -36,5 +28,5 @@
       }
     }
   },
-  "required": ["entities"]
+  "required": ["entities", "relationships"]
 }
