@@ -1,7 +1,7 @@
-Task:
+## Task
 Extract entities and relationships from the input text.
 
-Rules:
+## Rules:
 1) Extract all entities whose type is allowed in the schema.
 2) For each entity, return:
    - entity_name (uppercase canonical name)
@@ -9,24 +9,12 @@ Rules:
    - entity_description (concise but informative)
 3) Return only JSON matching the provided schema.
 
-EntityType examples:
-- PERSON: Individual people or fictional characters (e.g., Albert Einstein, Sherlock Holmes).
-- ORGANIZATION: Companies, institutions, agencies, teams, or other formal groups (e.g., Google, United Nations).
-- LOCATION: Geographic places that are not political entities (e.g., Mount Everest, Nile River).
-- GPE: Political geographic entities such as countries, states, provinces, or cities in political context (e.g., United States, Germany, Tokyo).
-- DATE: Calendar dates or periods (e.g., January 1, 2022; 2010-2015).
-- TIME: Time-of-day or durations (e.g., 5 PM, two hours).
-- MONEY: Monetary values with units or currency (e.g., $100, EUR50 million).
-- PERCENT: Percentage expressions (e.g., 50%, 3.14%).
-- FACILITY: Buildings or infrastructure (e.g., Eiffel Tower, JFK Airport).
-- PRODUCT: Tangible or named products, devices, vehicles, software (e.g., iPhone, Windows 10).
-- EVENT: Named events such as wars, sports events, disasters, conferences (e.g., World War II, Olympics).
-- WORK_OF_ART: Titles of books, songs, paintings, films, or similar works (e.g., Mona Lisa, Star Wars).
-- LANGUAGE: Named languages (e.g., English, Mandarin).
-- LAW: Named laws, acts, treaties, legal instruments (e.g., Affordable Care Act, Treaty of Versailles).
-- NORP: Nationalities, religious groups, or political affiliations (e.g., American, Christians, Democrat).
-- THING: Catch-all when no other type applies (e.g., apple fruit, rabbits, tree).
-
-Disambiguation:
-- Use GPE when the mention is political/governmental; otherwise use LOCATION for physical geography.
-- Use THING only if no specific type above fits.
+## EntityType reference:
+- CONCEPT: Theoretical ideas, methodologies, approaches
+- EVENT: Conferences, releases, historical events
+- LIFEFORM: Non-human lifeforms like plants, animals, insects
+- LOCATION: Cities, countries, regions
+- ORGANIZATION: Companies, institutions, or universities
+- PERSON: People mentioned in the chunk text
+- PRODUCT: Software products, platforms, services
+- TECHNOLOGY: Frameworks, programming languages, algorithms
