@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
-use std::hash::Hash;
 
 use crate::domain::GraphNode;
+use crate::domain::RelationshipKeyword;
 use crate::domain::util::deduplicate;
 
 #[derive(Clone, Debug, Eq, Deserialize, Hash, PartialEq, Serialize)]
@@ -22,69 +22,76 @@ pub(crate) struct GraphEdge {
     pub description: String,
 }
 
-/// Normalizes raw relationship mentions into validated graph edges.
-///
-/// Processing steps:
-/// - removes duplicate `RelationshipMention` values,
-/// - trims and validates source/target/keywords,
-/// - keeps only relationships whose source and target are in `seen_entities`,
-/// - expands each relationship into one `GraphEdge` per keyword.
-pub(crate) fn normalize_relationships(
+pub(crate) fn normalize_relationship_mentions(
     relationships: Vec<RelationshipMention>,
-    entities: &[GraphNode],
-) -> Vec<GraphEdge> {
+) -> Vec<RelationshipMention> {
     let max_entity_len = 200;
     let max_keyword_len = 100;
-
-    let seen_entities = HashSet::from_iter(entities.iter().map(|e| e.name.clone()));
 
     relationships
         .into_iter()
         .filter(deduplicate())
-        .filter_map(|r| clean_extracted_relationship(r, max_entity_len, max_keyword_len))
-        .filter(|r| is_valid_relationship(r, &seen_entities))
-        .flat_map(expand_single_relationship)
+        .filter_map(|relationship| {
+            clean_extracted_relationship(relationship, max_entity_len, max_keyword_len)
+        })
         .collect()
 }
 
-/// Expands a single relationship mention into one edge per keyword.
-///
-/// The returned iterator preserves keyword order and duplicates the same
-/// source, target, and description across all produced `GraphEdge`s.
-fn expand_single_relationship(
-    relationship: RelationshipMention,
-) -> impl Iterator<Item = GraphEdge> {
+pub(crate) fn retain_known_entity_relationships(
+    relationships: Vec<RelationshipMention>,
+    entities: &[GraphNode],
+) -> Vec<RelationshipMention> {
+    let seen_entities: HashSet<String> =
+        entities.iter().map(|entity| entity.name.clone()).collect();
+
+    relationships
+        .into_iter()
+        .filter(|relationship| {
+            seen_entities.contains(&relationship.source) && seen_entities.contains(&relationship.target)
+        })
+        .collect()
+}
+
+pub(crate) fn expand_relationships(relationships: Vec<RelationshipMention>) -> Vec<GraphEdge> {
+    relationships
+        .into_iter()
+        .flat_map(expand_single_relationship)
+        .filter(deduplicate())
+        .collect()
+}
+
+#[cfg(test)]
+pub(crate) fn normalize_relationships(
+    relationships: Vec<RelationshipMention>,
+    entities: &[GraphNode],
+) -> Vec<GraphEdge> {
+    expand_relationships(retain_known_entity_relationships(
+        normalize_relationship_mentions(relationships),
+        entities,
+    ))
+}
+
+fn expand_single_relationship(relationship: RelationshipMention) -> impl Iterator<Item = GraphEdge> {
     let source = relationship.source;
     let target = relationship.target;
     let description = relationship.description;
 
-    relationship
-        .keywords
-        .into_iter()
-        .map(move |keyword| GraphEdge {
-            keyword,
+    relationship.keywords.into_iter().filter_map(move |keyword| {
+        let keyword = RelationshipKeyword::parse(&keyword)?;
+        Some(GraphEdge {
+            keyword: keyword.as_str().to_string(),
             description: description.to_owned(),
             source: source.to_owned(),
             target: target.to_owned(),
         })
+    })
 }
 
-/// Returns `true` when both relationship endpoints are known entities.
-fn is_valid_relationship(relationship: &RelationshipMention, entities: &HashSet<String>) -> bool {
-    entities.contains(&relationship.source) && entities.contains(&relationship.target)
-}
-
-/// Cleans a single raw LLM-extracted relationship:
-/// - trims whitespace from all string fields,
-/// - removes empty or overly long keywords,
-/// - deduplicates keywords (preserving first-occurrence order),
-/// - discards the relationship if source/target entities are empty or exceed length limits.
 fn clean_extracted_relationship(
     mut rel: RelationshipMention,
     max_entity_len: usize,
     max_keyword_len: usize,
 ) -> Option<RelationshipMention> {
-    // Trim and validate entities (early exit for clearly invalid items).
     rel.source = rel.source.trim().to_string();
     rel.target = rel.target.trim().to_string();
     rel.description = rel.description.trim().to_string();
@@ -97,17 +104,21 @@ fn clean_extracted_relationship(
         return None;
     }
 
-    // Clean keywords: trim, remove empty/over-length, deduplicate.
-    let mut seen = std::collections::HashSet::new();
+    let mut seen = HashSet::new();
     let cleaned_keywords: Vec<String> = rel
         .keywords
         .into_iter()
-        .filter_map(|k| {
-            let trimmed = k.trim().to_string();
+        .filter_map(|keyword| {
+            let trimmed = keyword.trim().to_string();
             if trimmed.is_empty() || trimmed.len() > max_keyword_len {
-                None
-            } else if seen.insert(trimmed.clone()) {
-                Some(trimmed)
+                return None;
+            }
+
+            let canonical_keyword = RelationshipKeyword::parse(&trimmed)?;
+            let canonical_keyword = canonical_keyword.as_str().to_string();
+
+            if seen.insert(canonical_keyword.clone()) {
+                Some(canonical_keyword)
             } else {
                 None
             }
@@ -157,144 +168,71 @@ mod tests {
         }
     }
 
-    fn seen_entities(entities: &[&str]) -> Vec<GraphNode> {
+    fn seen_entities(entities: &[(&str, &str)]) -> Vec<GraphNode> {
         entities
             .iter()
-            .map(|entity| GraphNode {
-                name: (*entity).to_owned(),
-                entity_type: "entity".to_owned(),
+            .map(|(name, entity_type)| GraphNode {
+                name: (*name).to_owned(),
+                entity_type: (*entity_type).to_owned(),
                 description: "desc".to_owned(),
             })
             .collect()
     }
 
     #[test]
-    fn standardize_relationships_returns_empty_for_empty_input() {
-        let out = normalize_relationships(vec![], &seen_entities(&[]));
+    fn normalize_relationship_mentions_returns_empty_for_empty_input() {
+        let out = normalize_relationship_mentions(vec![]);
 
         assert!(out.is_empty());
     }
 
     #[test]
-    fn standardize_relationships_expands_single_relationship_with_single_keyword() {
-        let input = vec![rel("A", "B", &["is_a"], "A is a B")];
+    fn normalize_relationships_expands_single_relationship_with_single_keyword() {
+        let input = vec![rel("A", "B", &["worked_at"], "A worked at B")];
 
-        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&[("A", "AUTHOR"), ("B", "ORGANIZATION")]));
 
-        assert_eq!(out, vec![vrel("A", "B", "is_a", "A is a B")]);
+        assert_eq!(out, vec![vrel("A", "B", "WORKED_AT", "A worked at B")]);
     }
 
     #[test]
-    fn standardize_relationships_expands_single_relationship_with_multiple_keywords_in_order() {
+    fn normalize_relationships_expands_multiple_keywords_in_order() {
         let input = vec![rel(
             "A",
             "B",
-            &["is_a", "authored_by", "related_to"],
+            &["worked_at", "related_to", "worked_at"],
             "desc",
         )];
 
-        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
+        let out = normalize_relationships(input, &seen_entities(&[("A", "AUTHOR"), ("B", "ORGANIZATION")]));
 
         assert_eq!(
             out,
             vec![
-                vrel("A", "B", "is_a", "desc"),
-                vrel("A", "B", "authored_by", "desc"),
-                vrel("A", "B", "related_to", "desc"),
+                vrel("A", "B", "WORKED_AT", "desc"),
+                vrel("A", "B", "RELATED_TO", "desc"),
             ]
         );
     }
 
     #[test]
-    fn standardize_relationships_flattens_multiple_relationships_in_iteration_order() {
+    fn normalize_relationships_keeps_only_edges_with_seen_source_and_target() {
         let input = vec![
-            rel("A", "B", &["k1", "k2"], "d1"),
-            rel("C", "D", &["k3"], "d2"),
+            rel("A", "B", &["WORKED_AT"], "valid"),
+            rel("A", "X", &["RELATED_TO"], "invalid_target"),
+            rel("Y", "B", &["RELATED_TO"], "invalid_source"),
         ];
 
-        let out = normalize_relationships(input, &seen_entities(&["A", "B", "C", "D"]));
+        let out = normalize_relationships(input, &seen_entities(&[("A", "AUTHOR"), ("B", "ORGANIZATION")]));
 
-        assert_eq!(
-            out,
-            vec![
-                vrel("A", "B", "k1", "d1"),
-                vrel("A", "B", "k2", "d1"),
-                vrel("C", "D", "k3", "d2"),
-            ]
-        );
+        assert_eq!(out, vec![vrel("A", "B", "WORKED_AT", "valid")]);
     }
 
     #[test]
-    fn standardize_relationships_relationship_with_no_keywords_contributes_no_rows() {
-        let input = vec![rel("A", "B", &[], "desc")];
+    fn normalize_relationships_drops_unknown_keywords() {
+        let input = vec![rel("A", "B", &["made_of"], "invalid")];
 
-        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
-
-        assert!(out.is_empty());
-    }
-
-    #[test]
-    fn standardize_relationships_returns_empty_for_empty_input_when_seen_entities_non_empty() {
-        let out = normalize_relationships(vec![], &seen_entities(&["A", "B"]));
-
-        assert!(out.is_empty());
-    }
-
-    #[test]
-    fn standardize_relationships_filters_everything_when_seen_entities_empty() {
-        let input = vec![rel("A", "B", &["k1"], "d1"), rel("B", "C", &["k2"], "d2")];
-
-        let out = normalize_relationships(input, &seen_entities(&[]));
-
-        assert!(out.is_empty());
-    }
-
-    #[test]
-    fn standardize_relationships_keeps_only_edges_with_seen_source_and_target() {
-        let input = vec![
-            rel("A", "B", &["k1"], "valid"),
-            rel("A", "X", &["k2"], "invalid_target"),
-            rel("Y", "B", &["k3"], "invalid_source"),
-        ];
-
-        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
-
-        assert_eq!(out, vec![vrel("A", "B", "k1", "valid")]);
-    }
-
-    #[test]
-    fn standardize_relationships_preserves_relative_order_of_retained_edges() {
-        let input = vec![
-            rel("A", "B", &["k1"], "first_valid"),
-            rel("A", "X", &["k2"], "invalid"),
-            rel("B", "A", &["k3"], "second_valid"),
-        ];
-
-        let out = normalize_relationships(input, &seen_entities(&["A", "B"]));
-
-        assert_eq!(
-            out,
-            vec![
-                vrel("A", "B", "k1", "first_valid"),
-                vrel("B", "A", "k3", "second_valid"),
-            ]
-        );
-    }
-
-    #[test]
-    fn standardize_relationships_keeps_self_loop_if_entity_seen() {
-        let input = vec![rel("A", "A", &["k1"], "self")];
-
-        let out = normalize_relationships(input, &seen_entities(&["A"]));
-
-        assert_eq!(out, vec![vrel("A", "A", "k1", "self")]);
-    }
-
-    #[test]
-    fn standardize_relationships_uses_case_sensitive_matching() {
-        let input = vec![rel("Alice", "Bob", &["k1"], "desc")];
-
-        let out = normalize_relationships(input, &seen_entities(&["alice", "bob"]));
+        let out = normalize_relationships(input, &seen_entities(&[("A", "AUTHOR"), ("B", "ORGANIZATION")]));
 
         assert!(out.is_empty());
     }

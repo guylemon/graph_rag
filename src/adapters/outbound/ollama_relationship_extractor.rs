@@ -46,6 +46,14 @@ impl RelationshipExtractionPort for OllamaRelationshipExtractor {
         let entities = serde_json::to_string(&req.entities)?;
         variables.insert("input_text".to_string(), req.input.to_owned());
         variables.insert("entities".to_string(), entities.to_owned());
+        variables.insert(
+            "repair_context".to_string(),
+            req.repair_context.unwrap_or_default(),
+        );
+        variables.insert(
+            "allowed_rules".to_string(),
+            req.allowed_rules.unwrap_or_default(),
+        );
         let user_prompt = Message::new(Role::User, &llm_prompt::substitute(&template, &variables)?);
         let schema_raw = fs::read_to_string(&app_config.rel_id_llm_schema)?;
         let format: Format = Format::Schema(serde_json::from_str(&schema_raw)?);

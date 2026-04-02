@@ -2,6 +2,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashSet;
 
+use crate::domain::canonicalize_entity_type;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct EntityMention {
     pub entity_name: String,
@@ -61,7 +63,7 @@ fn clean_extracted_entity(
     constraints: &EntityConstraints,
 ) -> Option<GraphNode> {
     mention.entity_name = mention.entity_name.trim().to_string();
-    mention.entity_type = mention.entity_type.trim().to_string();
+    mention.entity_type = canonicalize_entity_type(&mention.entity_type)?;
     mention.entity_description = mention.entity_description.trim().to_string();
 
     if mention.entity_name.is_empty()
@@ -114,7 +116,7 @@ mod tests {
             result,
             vec![GraphNode {
                 name: "Alice".to_string(),
-                entity_type: "Person".to_string(),
+                entity_type: "PERSON".to_string(),
                 description: "Engineer".to_string(),
             }]
         );
@@ -128,7 +130,7 @@ mod tests {
             result,
             vec![GraphNode {
                 name: "Alice".to_string(),
-                entity_type: "Person".to_string(),
+                entity_type: "PERSON".to_string(),
                 description: "Engineer".to_string(),
             }]
         );
@@ -158,7 +160,7 @@ mod tests {
     #[test]
     fn normalize_entities_accepts_boundary_name_and_type_lengths() {
         let name = "n".repeat(200);
-        let entity_type = "t".repeat(100);
+        let entity_type = "AUTHOR".to_string();
         let description = "ok".to_string();
 
         let result = normalize_entities(vec![mention(&name, &entity_type, &description)]);
@@ -184,7 +186,7 @@ mod tests {
 
     #[test]
     fn normalize_entities_rejects_overlong_type() {
-        let entity_type = "t".repeat(101);
+        let entity_type = "unknown";
 
         let result = normalize_entities(vec![mention("Alice", &entity_type, "Engineer")]);
 
@@ -202,7 +204,7 @@ mod tests {
             result,
             vec![GraphNode {
                 name: "Alice".to_string(),
-                entity_type: "Person".to_string(),
+                entity_type: "PERSON".to_string(),
                 description: "First".to_string(),
             }]
         );
@@ -212,7 +214,7 @@ mod tests {
     fn normalize_entities_keeps_same_name_different_type() {
         let result = normalize_entities(vec![
             mention("Alice", "Person", "Engineer"),
-            mention("Alice", "Company", "Acme"),
+            mention("Alice", "Organization", "Acme"),
         ]);
 
         assert_eq!(
@@ -220,12 +222,12 @@ mod tests {
             vec![
                 GraphNode {
                     name: "Alice".to_string(),
-                    entity_type: "Person".to_string(),
+                    entity_type: "PERSON".to_string(),
                     description: "Engineer".to_string(),
                 },
                 GraphNode {
                     name: "Alice".to_string(),
-                    entity_type: "Company".to_string(),
+                    entity_type: "ORGANIZATION".to_string(),
                     description: "Acme".to_string(),
                 },
             ]
@@ -235,11 +237,11 @@ mod tests {
     #[test]
     fn normalize_entities_preserves_order_of_surviving_entities() {
         let result = normalize_entities(vec![
-            mention("A", "Type", "first"),
+            mention("A", "Concept", "first"),
             mention("Ignored", "   ", "invalid"),
-            mention("B", "Type", "second"),
-            mention("A", "Type", "duplicate"),
-            mention("C", "Type", "third"),
+            mention("B", "Concept", "second"),
+            mention("A", "Concept", "duplicate"),
+            mention("C", "Concept", "third"),
         ]);
 
         assert_eq!(
@@ -247,17 +249,17 @@ mod tests {
             vec![
                 GraphNode {
                     name: "A".to_string(),
-                    entity_type: "Type".to_string(),
+                    entity_type: "CONCEPT".to_string(),
                     description: "first".to_string(),
                 },
                 GraphNode {
                     name: "B".to_string(),
-                    entity_type: "Type".to_string(),
+                    entity_type: "CONCEPT".to_string(),
                     description: "second".to_string(),
                 },
                 GraphNode {
                     name: "C".to_string(),
-                    entity_type: "Type".to_string(),
+                    entity_type: "CONCEPT".to_string(),
                     description: "third".to_string(),
                 },
             ]
@@ -291,7 +293,7 @@ mod tests {
             result,
             Some(GraphNode {
                 name: "Alice".to_string(),
-                entity_type: "Person".to_string(),
+                entity_type: "PERSON".to_string(),
                 description: "long".to_string(),
             })
         );

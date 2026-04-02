@@ -43,6 +43,10 @@ impl EntityExtractionPort for OllamaEntityExtractor {
         let template = fs::read_to_string(&app_config.entity_id_user_prompt)?;
         let mut variables = HashMap::new();
         variables.insert("input_text".to_string(), req.input.to_owned());
+        variables.insert(
+            "repair_context".to_string(),
+            req.repair_context.unwrap_or_default(),
+        );
         let user_prompt = Message::new(Role::User, &llm_prompt::substitute(&template, &variables)?);
         let schema_raw = fs::read_to_string(&app_config.entity_id_llm_schema)?;
         let format: Format = Format::Schema(serde_json::from_str(&schema_raw)?);

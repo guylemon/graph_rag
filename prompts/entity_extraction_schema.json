@@ -12,6 +12,7 @@
           "entity_type": {
             "type": "string",
             "enum": [
+              "AUTHOR",
               "CONCEPT",
               "EVENT",
               "LIFEFORM",
@@ -28,5 +29,5 @@
       }
     }
   },
-  "required": ["entities", "relationships"]
+  "required": ["entities"]
 }
